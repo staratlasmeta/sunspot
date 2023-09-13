@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 [dependencies]
 axum = { version = "0.6.20", features = ["json"] }
 hudsucker = { version = "0.20.0", features = ["full"] }
-hyper = { version = "0.14", features = ["full"] }
+hyper = { version = "0.14.27", features = ["full"] }
 reqwest = { version = "0.11.20", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
@@ -25,3 +25,4 @@ spl-token = "4.0.0"
 lazy_static = "1.4.0"
 clap = { version = "4.4", features = ["derive"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+regex = "1.9.5"

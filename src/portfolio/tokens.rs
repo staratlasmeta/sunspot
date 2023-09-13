@@ -1,7 +1,8 @@
 use crate::{RPC_CLIENT, TOKEN_LIST};
 use hudsucker::RequestOrResponse;
-use hyper::header::CONTENT_TYPE;
+use hyper::header::{ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE};
 use hyper::{Body, Request, Response};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::to_string;
 use solana_account_decoder::parse_token::UiTokenAccount;
@@ -9,6 +10,13 @@ use solana_account_decoder::UiAccountData;
 use solana_client::rpc_request::TokenAccountsFilter;
 use solana_sdk::native_token::lamports_to_sol;
 use solana_sdk::pubkey::Pubkey;
+
+pub fn extract_address(url: &str) -> Option<&str> {
+    let re =
+        Regex::new(r"wallet-api\.solflare\.com/v2/portfolio/tokens/(?P<address>[^/?]+)").unwrap();
+    re.captures(url)
+        .and_then(|cap| cap.name("address").map(|m| m.as_str()))
+}
 
 #[derive(Debug, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -121,7 +129,7 @@ pub struct TokensValue {
     pub percentage: f64,
 }
 
-pub async fn handle_tokens_request(req: Request<Body>, key: Pubkey) -> RequestOrResponse {
+pub async fn handle_tokens_request(_req: Request<Body>, key: Pubkey) -> RequestOrResponse {
     let get_balance = RPC_CLIENT.get_balance(&key);
     let get_token_accounts_by_owner =
         RPC_CLIENT.get_token_accounts_by_owner(&key, TokenAccountsFilter::ProgramId(spl_token::ID));
@@ -146,7 +154,7 @@ pub async fn handle_tokens_request(req: Request<Body>, key: Pubkey) -> RequestOr
                     symbol: token_config.and_then(|token_config| token_config.symbol.clone()),
                     decimals: ui_token_account.token_amount.decimals,
                     mint: ui_token_account.mint,
-                    image_uri: token_config.and_then(|token_config| token_config.symbol.clone()),
+                    image_uri: token_config.and_then(|token_config| token_config.image_uri.clone()),
                     accounts: vec![TokenAccount {
                         pubkey: rpc_token.pubkey,
                         amount: ui_token_account.token_amount.amount,
@@ -166,10 +174,30 @@ pub async fn handle_tokens_request(req: Request<Body>, key: Pubkey) -> RequestOr
     response
         .headers_mut()
         .insert(CONTENT_TYPE, "application/json".parse().unwrap());
+    response
+        .headers_mut()
+        .insert(ACCESS_CONTROL_ALLOW_ORIGIN, "*".parse().unwrap());
+    response
+        .headers_mut()
+        .insert(ACCESS_CONTROL_ALLOW_HEADERS, "*".parse().unwrap());
     let tokens = TokensResponse {
         tokens,
         ..Default::default()
     };
     *response.body_mut() = Body::from(to_string(&tokens).unwrap());
     response.into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extract() {
+        let url = "https://wallet-api.solflare.com/v2/portfolio/tokens/7MMRAQ9dbHFVRHtWaNVrZKi9XNP4ji9uP2qi9RQ5ngEE?network=mainnet&currency=USD";
+        match extract_address(url) {
+            Some(address) => assert_eq!(address, "7MMRAQ9dbHFVRHtWaNVrZKi9XNP4ji9uP2qi9RQ5ngEE"),
+            None => panic!("No match found"),
+        };
+    }
 }

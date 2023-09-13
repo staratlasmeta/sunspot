@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TokenListItem {
     pub name: Option<String>,
     pub symbol: Option<String>,

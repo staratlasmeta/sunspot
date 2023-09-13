@@ -17,6 +17,7 @@ use solana_sdk::pubkey::Pubkey;
 use std::io::Read;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use std::str::FromStr;
 use tracing::*;
 
 async fn shutdown_signal() {
@@ -29,7 +30,7 @@ async fn shutdown_signal() {
 struct LogHandler;
 
 const RPC_URLS: [&str; 2] = ["solflare.network", "failover.solflare.com"];
-const TOKENS_WALLET_API_URL: &str = "wallet-api.solflare.com/v2/portfolio/tokens";
+
 #[async_trait]
 impl HttpHandler for LogHandler {
     async fn handle_request(
@@ -40,6 +41,7 @@ impl HttpHandler for LogHandler {
         if req.method() != "CONNECT" {
             let uri = req.uri().to_string();
             if RPC_URLS.iter().any(|rpc| uri.contains(rpc)) {
+                info!("Rpc request: {uri}");
                 return rpc::handle_rpc_request(req).await;
             } else if uri.contains(TOKENS_WALLET_API_URL) {
                 return portfolio::tokens::handle_tokens_request(req, Pubkey::default()).await;
@@ -58,7 +60,7 @@ impl HttpHandler for LogHandler {
 #[async_trait]
 impl WebSocketHandler for LogHandler {
     async fn handle_message(&mut self, _ctx: &WebSocketContext, msg: Message) -> Option<Message> {
-        // println!("{:?}", msg);
+        println!("{:?}", msg);
         Some(msg)
     }
 }
@@ -66,13 +68,13 @@ impl WebSocketHandler for LogHandler {
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    #[clap(short, long)]
+    #[clap(short = 'k', long, default_value = "./certs/sunspot.key")]
     pub private_key: PathBuf,
-    #[clap(short, long)]
-    pub cert: PathBuf,
+    #[clap(short, long, default_value = "./certs/sunspot.pem")]
+    pub certificate: PathBuf,
     #[clap(short, long)]
     pub token_list: Option<PathBuf>,
-    #[clap(short, long)]
+    #[clap(short, long, default_value = "127.0.0.1:6969")]
     pub socket_address: SocketAddr,
     pub rpc: String,
 }
@@ -108,7 +110,8 @@ async fn main() {
         bytes
     };
     let ca_cert_bytes: Vec<u8> = {
-        let mut file = std::fs::File::open(&CLI.cert).expect("Failed to open CA certificate file");
+        let mut file =
+            std::fs::File::open(&CLI.certificate).expect("Failed to open CA certificate file");
         let mut bytes = Vec::new();
         file.read_to_end(&mut bytes)
             .expect("Failed to read CA certificate file");
@@ -121,11 +124,14 @@ async fn main() {
     let ca = OpensslAuthority::new(private_key, ca_cert, MessageDigest::sha256(), 1_000);
 
     let proxy = Proxy::builder()
-        .with_addr(SocketAddr::from(([127, 0, 0, 1], 8000)))
+        .with_addr(CLI.socket_address)
         .with_rustls_client()
         .with_ca(ca)
         .with_http_handler(LogHandler)
         .build();
+
+    println!("Starting Sunspot Proxy on {}", CLI.socket_address);
+    println!("Listening...");
 
     if let Err(e) = proxy.start(shutdown_signal()).await {
         error!("{}", e);
