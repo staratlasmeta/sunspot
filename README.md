@@ -33,14 +33,15 @@ openssl req -x509 -new -nodes -key ./certs/sunspot.key -sha256 -days 1825 -out .
 
 ### Adding CA to Chrome
 
-1. Go to <chrome://settings/certificates> in your Chrome browser and click `Import`
-2. Select the `sunspot.pem` file from the `certs` directory
-3. Select `Trust this certificate for identifying websites` and click `OK`
+1. Go to <chrome://settings/certificates> in your Chrome browser
+2. Go to the `Authorities` tab and then `Import`
+3. Select the `sunspot.pem` file from the `certs` directory
+4. Select `Trust this certificate for identifying websites` and click `OK`
 
 ### Adding CA to Firefox
 
-1. Go to <about:preferences#privacys> in your Firefox browser and scroll down to `Certificates`
-2. Click `View Certificates` and then `Import`
+1. Go to <about:preferences#privacy> in your Firefox browser and scroll down to `Certificates`
+2. Click `View Certificates`, go to the `Authorities` tab, and then click `Import`
 3. Select the `sunspot.pem` file from the `certs` directory
 4. Select `Trust this CA to identify websites.` and click `OK`
 
