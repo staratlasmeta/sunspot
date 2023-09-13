@@ -1,6 +1,7 @@
 mod config;
 mod portfolio;
 mod rpc;
+mod token_list;
 
 use clap::Parser;
 use hudsucker::{
@@ -29,6 +30,18 @@ async fn shutdown_signal() {
 #[derive(Clone)]
 struct LogHandler;
 
+// Wallet API
+// *wallet-api.solflare.com/*
+
+// RPC
+// *solflare.network*
+
+// RPC Failover
+// *failover.solflare.com*
+
+// Token List
+// *token-list-api.solana.cloud/v1/mints*
+
 const RPC_URLS: [&str; 2] = ["solflare.network", "failover.solflare.com"];
 
 #[async_trait]
@@ -43,8 +56,20 @@ impl HttpHandler for LogHandler {
             if RPC_URLS.iter().any(|rpc| uri.contains(rpc)) {
                 info!("Rpc request: {uri}");
                 return rpc::handle_rpc_request(req).await;
-            } else if uri.contains(TOKENS_WALLET_API_URL) {
-                return portfolio::tokens::handle_tokens_request(req, Pubkey::default()).await;
+            } else if let Some(address) = portfolio::tokens::extract_address(uri.as_str()) {
+                info!("Tokens request: {uri}");
+                return match Pubkey::from_str(address) {
+                    Ok(address) => portfolio::tokens::handle_tokens_request(req, address).await,
+                    Err(e) => {
+                        error!("Failed to parse address from {uri}: {e}");
+                        req.into()
+                    }
+                };
+            } else if uri.contains("token-list-api.solana.cloud/v1/mints") {
+                info!("Token list request: {uri}");
+                return token_list::handle_token_list_request(req).await;
+            } else {
+                info!("Unknown request: {uri}");
             }
             req.into()
         } else {
