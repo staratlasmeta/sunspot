@@ -9,20 +9,18 @@ license = "MIT OR Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = { version = "0.6.20", features = ["json"] }
+clap = { version = "4.4", features = ["derive"] }
 hudsucker = { version = "0.20.0", features = ["full"] }
 hyper = { version = "0.14.27", features = ["full"] }
+lazy_static = "1.4.0"
+regex = "1.9.5"
 reqwest = { version = "0.11.20", features = ["json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
-tokio = { version = "1.0", features = ["full"] }
-tower = { version = "0.4", features = ["make"] }
-tracing = "0.1"
 solana-account-decoder = "1.16.13"
 solana-client = "1.16.13"
 solana-sdk = "1.16.13"
 spl-token = "4.0.0"
-lazy_static = "1.4.0"
-clap = { version = "4.4", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-regex = "1.9.5"
