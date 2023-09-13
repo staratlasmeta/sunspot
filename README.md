@@ -1,22 +1,18 @@
 # Sunspot Proxy
-
----
-![Crates.io](https://img.shields.io/crates/v/sunspot) ![Crates.io](https://img.shields.io/crates/l/sunspot) ![Crates.io](https://img.shields.io/crates/d/sunspot)
+[![Crates.io](https://img.shields.io/crates/v/sunspot)](https://crates.io/crates/sunspot) 
+![Crates.io](https://img.shields.io/crates/l/sunspot) 
+![Crates.io](https://img.shields.io/crates/d/sunspot)
 
 Sunspot is a proxy server that enables custom RPC urls and custom token metadata lists for
 the [Solflare](https://solflare.com) Solana wallet.
 
 ## Installation
 
----
-
 ```bash
 cargo install sunspot
 ```
 
 ## Setting up Local Certificate Authority
-
----
 
 ### Generating Certificates
 
@@ -50,7 +46,6 @@ openssl req -x509 -new -nodes -key ./certs/sunspot.key -sha256 -days 1825 -out .
 
 ## Setting up SwitchyOmega Proxy
 
---- 
 
 1. Install from the [Chrome Web Store](https://chrome.google.com/webstore/detail/padekgcemlokbadohgkifijomclgjgif) or
    [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/switchyomega/)
@@ -59,8 +54,6 @@ openssl req -x509 -new -nodes -key ./certs/sunspot.key -sha256 -days 1825 -out .
 4. Click `Apply Changes` and enable the `auto switch` option through the extension icon
 
 ## Usage
-
----
 
 ```bash
 sunspot --help
@@ -98,7 +91,5 @@ sunspot -k ./certs/sunspot.key -c ./certs/sunspot.pem -t ./tokens.json http://lo
 ```
 
 ## Thanks
-
----
 
 Special thanks to the [Hudsucker](https://github.com/omjadas/hudsucker) crate for the MITM HTTP/S proxy implementation
