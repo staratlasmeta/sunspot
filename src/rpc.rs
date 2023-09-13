@@ -1,37 +1,27 @@
 use crate::CLI;
 use axum::http::Response;
 use hudsucker::RequestOrResponse;
-use hyper::header::CONTENT_TYPE;
+use hyper::header::{ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE};
 use hyper::{Body, Request};
 
 pub(crate) async fn handle_rpc_request(req: Request<Body>) -> RequestOrResponse {
-    let res = reqwest::Client::new()
-        .post(CLI.rpc.as_str())
-        .body(req.into_body())
-        .header(CONTENT_TYPE, "application/json")
-        .send()
-        .await
-        .unwrap();
-    // let content_type = res
-    //     .headers()
-    //     .get("content-type")
-    //     .unwrap()
-    //     .to_str()
-    //     .unwrap()
-    //     .to_string();
-    let mut response = Response::new(Body::empty());
-    *response.headers_mut() = res.headers().clone();
-    // return if content_type.contains("application/json") {
+    let method = req.method();
+    let client = reqwest::Client::new();
+    let req_type = req.headers().get(CONTENT_TYPE);
+    let mut res = client.request(method.clone(), CLI.rpc.as_str());
+    if let Some(req_type) = req_type {
+        res = res.header(CONTENT_TYPE, req_type);
+    }
+    let res = res.body(req.into_body()).send().await.unwrap();
+    let content_type = res.headers().get(CONTENT_TYPE).unwrap().clone();
     let bytes = res.bytes().await.unwrap();
-    *response.body_mut() = bytes.into();
+    let mut response = Response::new(bytes.into());
+    response.headers_mut().insert(CONTENT_TYPE, content_type);
+    response
+        .headers_mut()
+        .insert(ACCESS_CONTROL_ALLOW_ORIGIN, "*".parse().unwrap());
+    response
+        .headers_mut()
+        .insert(ACCESS_CONTROL_ALLOW_HEADERS, "*".parse().unwrap());
     response.into()
-    // } else if content_type.contains("text/plain") {
-    //     let text = res.bytes().await.unwrap();
-    //     *response.body_mut() = text.into();
-    //     response.into()
-    // } else {
-    //     let bytes = res.bytes().await.unwrap();
-    //     *response.body_mut() = bytes.into();
-    //     response.into()
-    // };
 }
