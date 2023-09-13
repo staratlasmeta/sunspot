@@ -1,10 +1,11 @@
 [package]
 name = "sunspot"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Sammy Harris <sammy@stegabob.com>"]
 description = "Proxy server for Solflare Wallet to re-enable custom RPC endpoints"
 license = "MIT OR Apache-2.0"
+repository = "https://github.com/staratlasmeta/sunspot/"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
