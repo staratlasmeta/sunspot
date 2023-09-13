@@ -3,3 +3,6 @@
 .DS_Store
 certs
 
+/dev-tokens.json
+/token-map.js
+/tokens.json
