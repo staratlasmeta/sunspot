@@ -42,7 +42,12 @@ struct LogHandler;
 // Token List
 // *token-list-api.solana.cloud/v1/mints*
 
-const RPC_URLS: [&str; 2] = ["solflare.network", "failover.solflare.com"];
+const RPC_URLS: [&str; 4] = [
+    "solflare.network",
+    "failover.solflare.com",
+    "wallet-api.solflare.com/v2/tx/rpc",
+    "api.testnet.solana.com",
+];
 
 #[async_trait]
 impl HttpHandler for LogHandler {

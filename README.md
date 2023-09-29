@@ -56,6 +56,10 @@ openssl req -x509 -new -nodes -key ./certs/sunspot.key -sha256 -days 1825 -out .
 
 ## Usage
 
+Using the Testnet RPC option for Solflare is recommended. This will cause Solflare to route transactions through Testnet nodes,
+so if an API changes unexpectedly, real transactions won't be routed to Mainnet-Beta. Testnet also disables some features, 
+which is what we want since Sunspot can't support everything (yet)! 
+
 ```bash
 sunspot --help
 ```
