@@ -1,6 +1,6 @@
 [package]
 name = "sunspot"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["Sammy Harris <sammy@stegabob.com>"]
 description = "Proxy server for Solflare Wallet to re-enable custom RPC endpoints"
