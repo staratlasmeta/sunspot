@@ -15,6 +15,7 @@ var FindProxyForURL = function(init, profiles) {
         if (/solflare\.network/.test(host)) return "+Sunspot";
         if (/failover\.solflare\.com/.test(host)) return "+Sunspot";
         if (/token-list-api\.solana\.cloud/.test(host)) return "+Sunspot";
+        if (/api\.testnet\.solana\.com/.test(host)) return "+Sunspot";
         return "DIRECT";
     },
     "+Sunspot": function(url, host, scheme) {
