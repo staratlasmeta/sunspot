@@ -3,6 +3,7 @@ mod portfolio;
 mod rpc;
 mod token_list;
 
+use anyhow::{bail, Context, Result};
 use clap::Parser;
 use hudsucker::{
     async_trait::async_trait,
@@ -41,6 +42,12 @@ struct LogHandler;
 
 // Token List
 // *token-list-api.solana.cloud/v1/mints*
+
+fn sunspot_config() -> Result<PathBuf> {
+    home::home_dir()
+        .context("Failed to get home directory")
+        .map(|home| home.join(".config").join("sunspot"))
+}
 
 const RPC_URLS: [&str; 4] = [
     "solflare.network",
@@ -98,33 +105,53 @@ impl WebSocketHandler for LogHandler {
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
-    #[clap(short = 'k', long, default_value = "./certs/sunspot.key")]
+    #[clap(
+        short = 'k',
+        long,
+        default_value = sunspot_config().unwrap().join("certs/sunspot.key").into_os_string()
+    )]
     pub private_key: PathBuf,
-    #[clap(short, long, default_value = "./certs/sunspot.pem")]
+    #[clap(short, long, default_value = sunspot_config().unwrap().join("certs/sunspot.pem").into_os_string())]
     pub certificate: PathBuf,
+    /// Pulls token list from ~/.config/sunspot/tokens/<TOKEN_NAME>.json
     #[clap(short, long)]
-    pub token_list: Option<PathBuf>,
+    pub token_list_name: Option<String>,
     #[clap(short, long, default_value = "127.0.0.1:6969")]
     pub socket_address: SocketAddr,
     pub rpc: String,
 }
 
+impl Cli {
+    fn rpc_client(&self) -> solana_client::nonblocking::rpc_client::RpcClient {
+        solana_client::nonblocking::rpc_client::RpcClient::new(self.rpc.clone())
+    }
+
+    fn token_list(&self) -> Result<config::TokenList> {
+        let token_list = CLI
+            .token_list_name
+            .as_ref()
+            .map(|path| {
+                let sunspot_config = sunspot_config()?;
+                let path = sunspot_config.join("tokens").join(format!("{path}.json"));
+                if !path.is_file() {
+                    bail!("Token list not found at {}!", path.display());
+                }
+                let file = std::fs::File::open(path)?;
+                serde_json::from_reader(file).context("Failed to parse token list file")
+            })
+            .transpose()?;
+        Ok(token_list.unwrap_or_default())
+    }
+}
+
 lazy_static! {
     pub static ref CLI: Cli = Cli::parse();
-    pub static ref TOKEN_LIST: config::TokenList = CLI
-        .token_list
-        .as_ref()
-        .map(|path| {
-            let file = std::fs::File::open(path).unwrap();
-            serde_json::from_reader(file).unwrap()
-        })
-        .unwrap_or_default();
-    pub static ref RPC_CLIENT: solana_client::nonblocking::rpc_client::RpcClient =
-        solana_client::nonblocking::rpc_client::RpcClient::new(CLI.rpc.clone());
+    pub static ref RPC_CLIENT: solana_client::nonblocking::rpc_client::RpcClient = CLI.rpc_client();
+    pub static ref TOKEN_LIST: config::TokenList = CLI.token_list().unwrap();
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     lazy_static::initialize(&CLI);
@@ -132,24 +159,36 @@ async fn main() {
     lazy_static::initialize(&RPC_CLIENT);
 
     let private_key_bytes: Vec<u8> = {
+        if !CLI.private_key.is_file() {
+            bail!(
+                "Private key file not found at {}!",
+                CLI.private_key.display()
+            );
+        }
         let mut file =
-            std::fs::File::open(&CLI.private_key).expect("Failed to open private key file");
+            std::fs::File::open(&CLI.private_key).context("Failed to open private key file")?;
         let mut bytes = Vec::new();
         file.read_to_end(&mut bytes)
-            .expect("Failed to read private key file");
+            .context("Failed to read private key file")?;
         bytes
     };
     let ca_cert_bytes: Vec<u8> = {
+        if !CLI.certificate.is_file() {
+            bail!(
+                "CA certificate file not found at {}!",
+                CLI.certificate.display()
+            );
+        }
         let mut file =
-            std::fs::File::open(&CLI.certificate).expect("Failed to open CA certificate file");
+            std::fs::File::open(&CLI.certificate).context("Failed to open CA certificate file")?;
         let mut bytes = Vec::new();
         file.read_to_end(&mut bytes)
-            .expect("Failed to read CA certificate file");
+            .context("Failed to read CA certificate file")?;
         bytes
     };
     let private_key =
-        PKey::private_key_from_pem(&private_key_bytes).expect("Failed to parse private key");
-    let ca_cert = X509::from_pem(&ca_cert_bytes).expect("Failed to parse CA certificate");
+        PKey::private_key_from_pem(&private_key_bytes).context("Failed to parse private key")?;
+    let ca_cert = X509::from_pem(&ca_cert_bytes).context("Failed to parse CA certificate")?;
 
     let ca = OpensslAuthority::new(private_key, ca_cert, MessageDigest::sha256(), 1_000);
 
@@ -164,6 +203,7 @@ async fn main() {
     println!("Listening...");
 
     if let Err(e) = proxy.start(shutdown_signal()).await {
-        error!("{}", e);
+        bail!("{}", e);
     }
+    Ok(())
 }

@@ -26,9 +26,9 @@ chmod +x generate-cert.sh
 #### From anywhere
 
 ```bash
-mkdir -p ./certs
-openssl genrsa -out ./certs/sunspot.key 2048
-openssl req -x509 -new -nodes -key ./certs/sunspot.key -sha256 -days 1825 -out ./certs/sunspot.pem
+mkdir -p $HOME/.config/sunspot/certs
+openssl genrsa -out $HOME/.config/sunspot/certs/sunspot.key 2048
+openssl req -x509 -new -nodes -key $HOME/.config/sunspot/certs/sunspot.key -sha256 -days 1825 -out $HOME/.config/sunspot/certs/sunspot.pem
 ```
 
 ### Adding CA to Chrome
@@ -64,6 +64,14 @@ which is what we want since Sunspot can't support everything (yet)!
 sunspot --help
 ```
 
+By default, Sunspot will try to pull the `sunspot.pem` and `sunspot.key` files from `$HOME/.config/sunspot/certs`. 
+
+```bash
+sunspot http://localhost:8899
+```
+
+If you want to use a custom certificate location, you can use the `--certificate` (`-c`) and `--key` (`-k`) flags.
+
 ```bash
 sunspot -k ./certs/sunspot.key -c ./certs/sunspot.pem http://localhost:8899
 ```
@@ -72,6 +80,7 @@ sunspot -k ./certs/sunspot.key -c ./certs/sunspot.pem http://localhost:8899
 
 Sunspot allows you to provide a custom token-list JSON file, which is used to add custom names, symbols, and imageURIs
 to tokens in both the wallet view and during simulations.
+
 
 ```json
 {
@@ -89,10 +98,11 @@ to tokens in both the wallet view and during simulations.
 }
 ```
 
-You can pass this file to Sunspot using the `--token-list` (`-t`) flag.
+Plop the token list file in `$HOME/.config/sunspot/tokens/<TOKEN_NAME>.json`. 
+You can pass this file to Sunspot using the `--token-list` (`-t`) flag, providing the <TOKEN_NAME> of the file. 
 
 ```bash
-sunspot -k ./certs/sunspot.key -c ./certs/sunspot.pem -t ./tokens.json http://localhost:8899
+sunspot -t <TOKEN_NAME> http://localhost:8899
 ```
 
 ## Thanks
