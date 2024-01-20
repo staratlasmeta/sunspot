@@ -13,7 +13,7 @@ use solana_sdk::pubkey::Pubkey;
 
 pub fn extract_address(url: &str) -> Option<&str> {
     let re =
-        Regex::new(r"wallet-api\.solflare\.com/v2/portfolio/tokens/(?P<address>[^/?]+)").unwrap();
+        Regex::new(r"wallet-api\.solflare\.com/v3/portfolio/tokens/(?P<address>[^/?]+)").unwrap();
     re.captures(url)
         .and_then(|cap| cap.name("address").map(|m| m.as_str()))
 }
